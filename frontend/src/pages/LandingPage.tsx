@@ -23,7 +23,7 @@ export function LandingPage() {
     {
       icon: Target,
       title: 'Strategic Role Matching',
-      description: 'Understand exactly what jobs you\'re competitive for and how well your background aligns with target roles.'
+      description: 'Understand exactly what jobs you're competitive for and how well your background aligns with target roles.'
     },
     {
       icon: ClipboardCheck,
@@ -108,7 +108,7 @@ export function LandingPage() {
               variants={fadeInUp}
               className="text-xl text-gray-600 max-w-3xl mx-auto mb-10 leading-relaxed"
             >
-              Not a resume grader. Not a keyword scanner. A genuine career coach that helps you understand what you\'re competitive for, what\'s missing, and exactly what to do next.
+              Not a resume grader. Not a keyword scanner. A genuine career coach that helps you understand what you're competitive for, what's missing, and exactly what to do next.
             </motion.p>
 
             <motion.div
@@ -185,7 +185,7 @@ export function LandingPage() {
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">What Makes Us Different</h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              We don\'t just scan for keywords. We provide genuine strategic career guidance.
+              We don't just scan for keywords. We provide genuine strategic career guidance.
             </p>
           </div>
 
