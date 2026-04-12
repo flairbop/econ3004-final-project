@@ -17,8 +17,14 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     API_V1_STR: str = "/api/v1"
 
-    # CORS
+    # CORS — supports comma-separated origins from env
     BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000"]
+
+    @classmethod
+    def parse_cors_origins(cls, v):
+        if isinstance(v, str):
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        return v
 
     # Database
     DATABASE_URL: str = f"sqlite:///{BASE_DIR}/app.db"
@@ -29,9 +35,11 @@ class Settings(BaseSettings):
     ALLOWED_EXTENSIONS: set[str] = {".pdf", ".docx", ".txt"}
 
     # AI Model Configuration
-    # Report generation model (can use OpenAI, Anthropic, etc.)
-    REPORT_MODEL_PROVIDER: str = "openai"  # or "anthropic"
-    REPORT_MODEL_NAME: str = "gpt-4o-mini"
+    # FREE-FIRST DEFAULTS: Ollama for local development
+    # For public deployment, frontend uses browser-based inference (WebLLM)
+    # Report generation model (can use Ollama, OpenAI, Anthropic, etc.)
+    REPORT_MODEL_PROVIDER: str = "ollama"  # Default: ollama (free, local)
+    REPORT_MODEL_NAME: str = "qwen2.5:7b"  # Lightweight, good quality
     OPENAI_API_KEY: Optional[str] = None
     ANTHROPIC_API_KEY: Optional[str] = None
 

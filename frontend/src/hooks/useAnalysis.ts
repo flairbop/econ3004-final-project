@@ -1,13 +1,13 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { api } from '../services/api';
-import { AnalysisStatusResponse, CareerReport } from '../types';
+import type { AnalysisStatusResponse, CareerReport } from '../types';
 
 interface UseAnalysisReturn {
   status: AnalysisStatusResponse | null;
   report: CareerReport | null;
   isLoading: boolean;
   error: string | null;
-  pollStatus: (sessionId: string) => Promise<void>;
+  pollStatus: (sessionId: string) => void;
   fetchReport: (sessionId: string) => Promise<void>;
   clearError: () => void;
 }
@@ -87,8 +87,4 @@ export function useAnalysis(): UseAnalysisReturn {
     fetchReport,
     clearError,
   };
-}
-
-function fetchReport(sessionId: string) {
-  throw new Error('Function not implemented.');
 }

@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, ChevronLeft, Bot, User, Loader2, Sparkles } from 'lucide-react';
-import { api } from '../services/api';
 import { useChat } from '../hooks/useChat';
 
 export function ChatPage() {
@@ -14,7 +13,6 @@ export function ChatPage() {
   const {
     messages,
     isLoading,
-    error,
     suggestions,
     sendMessage,
     loadChatHistory,

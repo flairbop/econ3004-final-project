@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { api } from '../services/api';
-import { ChatMessage, ChatResponse } from '../types';
+import type { ChatMessage, ChatResponse } from '../types';
 
 interface UseChatReturn {
   messages: ChatMessage[];

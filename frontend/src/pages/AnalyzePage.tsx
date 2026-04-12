@@ -1,8 +1,9 @@
 import { useState, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, FileText, Briefcase, ChevronRight, ChevronLeft, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { api } from '../services/api';
-import { IntakeFormData } from '../types';
+import type { IntakeFormData } from '../types';
 
 interface StepProps {
   isActive: boolean;
@@ -130,7 +131,7 @@ export function AnalyzePage() {
         {/* Header */}
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Career Analysis</h1>
-          <p className="text-gray-600">Let's analyze your fit for your target role</p>
+          <p className="text-gray-600">Let\'s analyze your fit for your target role</p>
         </div>
 
         {/* Progress Steps */}
@@ -246,7 +247,7 @@ export function AnalyzePage() {
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 mb-2">Target Job Description</h2>
-                <p className="text-gray-600">Paste the job description for the role you're targeting</p>
+                <p className="text-gray-600">Paste the job description for the role you\'re targeting</p>
               </div>
 
               <textarea
@@ -456,7 +457,7 @@ export function AnalyzePage() {
 
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-800">
-                  <strong>What happens next?</strong> We'll analyze your resume against the job description, assess your fit, identify gaps, and create a personalized 30-day action plan. This takes about 30-60 seconds.
+                  <strong>What happens next?</strong> We\'ll analyze your resume against the job description, assess your fit, identify gaps, and create a personalized 30-day action plan. This takes about 30-60 seconds.
                 </p>
               </div>
             </div>
@@ -508,4 +509,3 @@ export function AnalyzePage() {
   );
 }
 
-import { useNavigate } from 'react-router-dom';

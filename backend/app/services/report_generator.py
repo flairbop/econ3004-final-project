@@ -63,11 +63,12 @@ class ReportGenerator:
         """Build the comprehensive analysis prompt."""
 
         guidance_tone = intake.get("guidance_tone", "balanced")
-        tone_instruction = {
+        tone_map = {
             "ambitious": "Be encouraging but realistic about growth potential. Push the user to aim high while being honest about gaps.",
             "realistic": "Be pragmatic and grounded. Focus on what is achievable now and concrete steps forward.",
             "balanced": "Balance ambition with realism. Acknowledge both strengths and gaps fairly."
-        }.get(guidance_tone, tone_instruction["balanced"])
+        }
+        tone_instruction = tone_map.get(guidance_tone, tone_map["balanced"])
 
         # Truncate texts if too long
         resume_snippet = resume_text[:4000] + "..." if len(resume_text) > 4000 else resume_text
