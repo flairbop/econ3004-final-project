@@ -29,7 +29,7 @@ class ResumeDocument(SQLModel, table=True):
     __tablename__ = "resumes"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    session_id: str = Field(index=True, unique=True)
+    session_id: str = Field(index=True, unique=True, foreign_key="analysis_sessions.session_id")
     filename: str
     file_path: str
     raw_text: str
@@ -46,7 +46,7 @@ class JobDescription(SQLModel, table=True):
     __tablename__ = "job_descriptions"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    session_id: str = Field(index=True, unique=True)
+    session_id: str = Field(index=True, unique=True, foreign_key="analysis_sessions.session_id")
     raw_text: str
     parsed_structure: Optional[str] = Field(default=None)  # JSON string
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -60,7 +60,7 @@ class IntakeProfile(SQLModel, table=True):
     __tablename__ = "intake_profiles"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    session_id: str = Field(index=True, unique=True)
+    session_id: str = Field(index=True, unique=True, foreign_key="analysis_sessions.session_id")
 
     # Core info
     target_role: str
@@ -90,7 +90,7 @@ class CareerReport(SQLModel, table=True):
     __tablename__ = "career_reports"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    session_id: str = Field(index=True, unique=True)
+    session_id: str = Field(index=True, unique=True, foreign_key="analysis_sessions.session_id")
 
     # Report sections stored as JSON
     executive_summary: str
