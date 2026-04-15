@@ -4,6 +4,7 @@ Application configuration loaded from environment variables.
 import os
 from pathlib import Path
 from typing import Optional
+from pydantic import Field
 from pydantic_settings import BaseSettings
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -17,14 +18,14 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     API_V1_STR: str = "/api/v1"
 
-    # CORS — supports comma-separated origins from env
-    BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000"]
+    # CORS - use Field to avoid parsing issues with env file
+    BACKEND_CORS_ORIGINS: str = Field(default="http://localhost:5173,http://localhost:3000", env="BACKEND_CORS_ORIGINS")
 
-    @classmethod
-    def parse_cors_origins(cls, v):
-        if isinstance(v, str):
-            return [origin.strip() for origin in v.split(",") if origin.strip()]
-        return v
+    @property
+    def cors_origins(self) -> list[str]:
+        if isinstance(self.BACKEND_CORS_ORIGINS, str):
+            return [origin.strip() for origin in self.BACKEND_CORS_ORIGINS.split(",") if origin.strip()]
+        return self.BACKEND_CORS_ORIGINS
 
     # Database
     DATABASE_URL: str = f"sqlite:///{BASE_DIR}/app.db"

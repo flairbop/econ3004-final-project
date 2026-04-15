@@ -1,41 +1,8 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, FileText, Briefcase, ChevronRight, ChevronLeft, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { api } from '../services/api';
 import type { IntakeFormData } from '../types';
-
-interface StepProps {
-  isActive: boolean;
-  isComplete: boolean;
-  number: number;
-  title: string;
-}
-
-function StepIndicator({ isActive, isComplete, number, title }: StepProps) {
-  return (
-    <div className="flex items-center gap-3">
-      <div
-        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
-          isComplete
-            ? 'bg-green-500 text-white'
-            : isActive
-            ? 'bg-blue-600 text-white'
-            : 'bg-gray-200 text-gray-500'
-        }`}
-      >
-        {isComplete ? <CheckCircle2 className="w-5 h-5" /> : number}
-      </div>
-      <span
-        className={`text-sm font-medium hidden sm:block ${
-          isActive ? 'text-gray-900' : 'text-gray-500'
-        }`}
-      >
-        {title}
-      </span>
-    </div>
-  );
-}
 
 export function AnalyzePage() {
   const navigate = useNavigate();
@@ -112,7 +79,7 @@ export function AnalyzePage() {
   const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, 4));
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
 
-  const canProceed = useCallback(() => {
+  const canProceed = () => {
     switch (currentStep) {
       case 1:
         return uploadStatus === 'success';
@@ -123,34 +90,36 @@ export function AnalyzePage() {
       default:
         return true;
     }
-  }, [currentStep, uploadStatus, jobDescription, intakeData]);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto px-4">
         {/* Header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Career Analysis</h1>
-          <p className="text-gray-600">Let\'s analyze your fit for your target role</p>
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">Career Analysis</h1>
+          <p className="text-gray-600">Complete the steps below to generate your analysis</p>
         </div>
 
         {/* Progress Steps */}
         <div className="mb-8">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
             {steps.map((step, idx) => (
               <div key={step.number} className="flex items-center">
-                <StepIndicator
-                  isActive={currentStep === step.number}
-                  isComplete={currentStep > step.number}
-                  number={step.number}
-                  title={step.title}
-                />
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                    currentStep >= step.number
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-500'
+                  }`}
+                >
+                  {currentStep > step.number ? <CheckCircle2 className="w-5 h-5" /> : step.number}
+                </div>
+                <span className={`ml-2 text-sm font-medium ${currentStep >= step.number ? 'text-gray-900' : 'text-gray-500'}`}>
+                  {step.title}
+                </span>
                 {idx < steps.length - 1 && (
-                  <div
-                    className={`w-8 sm:w-16 h-px mx-2 sm:mx-4 ${
-                      currentStep > step.number ? 'bg-green-500' : 'bg-gray-200'
-                    }`}
-                  />
+                  <div className={`w-12 h-px mx-4 ${currentStep > step.number ? 'bg-green-500' : 'bg-gray-200'}`} />
                 )}
               </div>
             ))}
@@ -158,43 +127,29 @@ export function AnalyzePage() {
         </div>
 
         {/* Error Alert */}
-        <AnimatePresence>
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3"
-            >
-              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-              <span className="text-red-700">{error}</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+            <span className="text-red-700">{error}</span>
+          </div>
+        )}
 
         {/* Step Content */}
-        <motion.div
-          key={currentStep}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.3 }}
-          className="card"
-        >
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
           {/* Step 1: Upload Resume */}
           {currentStep === 1 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">Upload Your Resume</h2>
-                <p className="text-gray-600">We accept PDF, DOCX, or TXT files up to 10MB</p>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">Upload Your Resume</h2>
+                <p className="text-gray-600">PDF, DOCX, or TXT files up to 10MB</p>
               </div>
 
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
+                className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer ${
                   uploadStatus === 'success'
                     ? 'border-green-300 bg-green-50'
-                    : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
+                    : 'border-gray-300 hover:border-blue-400'
                 }`}
               >
                 <input
@@ -208,21 +163,21 @@ export function AnalyzePage() {
                 {uploadStatus === 'uploading' ? (
                   <div className="flex flex-col items-center gap-3">
                     <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-                    <span className="text-gray-600">Uploading and parsing...</span>
+                    <span className="text-gray-600">Uploading...</span>
                   </div>
                 ) : uploadStatus === 'success' ? (
                   <div className="flex flex-col items-center gap-3">
                     <CheckCircle2 className="w-8 h-8 text-green-500" />
                     <div>
                       <p className="font-medium text-gray-900">{file?.name}</p>
-                      <p className="text-sm text-green-600">Successfully uploaded</p>
+                      <p className="text-sm text-green-600">Uploaded successfully</p>
                     </div>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-3">
                     <Upload className="w-8 h-8 text-gray-400" />
                     <div>
-                      <p className="font-medium text-gray-900">Click to upload your resume</p>
+                      <p className="font-medium text-gray-900">Click to upload</p>
                       <p className="text-sm text-gray-500">PDF, DOCX, or TXT</p>
                     </div>
                   </div>
@@ -246,8 +201,8 @@ export function AnalyzePage() {
           {currentStep === 2 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">Target Job Description</h2>
-                <p className="text-gray-600">Paste the job description for the role you\'re targeting</p>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">Target Job Description</h2>
+                <p className="text-gray-600">Paste the job description for your target role</p>
               </div>
 
               <textarea
@@ -255,11 +210,11 @@ export function AnalyzePage() {
                 onChange={(e) => setJobDescription(e.target.value)}
                 placeholder="Paste job description here..."
                 rows={12}
-                className="input-field resize-none"
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400"
               />
 
               <p className="text-sm text-gray-500">
-                {jobDescription.length} characters (minimum 50 recommended)
+                {jobDescription.length} characters (minimum 50)
               </p>
             </div>
           )}
@@ -268,7 +223,7 @@ export function AnalyzePage() {
           {currentStep === 3 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">Tell Us About Yourself</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">About You</h2>
                 <p className="text-gray-600">Help us personalize your analysis</p>
               </div>
 
@@ -281,8 +236,8 @@ export function AnalyzePage() {
                     type="text"
                     value={intakeData.targetRole}
                     onChange={(e) => setIntakeData({ ...intakeData, targetRole: e.target.value })}
-                    placeholder="e.g., Software Engineer, Data Analyst"
-                    className="input-field"
+                    placeholder="e.g., Software Engineer"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400"
                   />
                 </div>
 
@@ -294,8 +249,8 @@ export function AnalyzePage() {
                     type="text"
                     value={intakeData.alternativeRoles}
                     onChange={(e) => setIntakeData({ ...intakeData, alternativeRoles: e.target.value })}
-                    placeholder="e.g., Product Manager, UX Designer"
-                    className="input-field"
+                    placeholder="e.g., Product Manager"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400"
                   />
                 </div>
 
@@ -304,7 +259,7 @@ export function AnalyzePage() {
                   <select
                     value={intakeData.yearInSchool}
                     onChange={(e) => setIntakeData({ ...intakeData, yearInSchool: e.target.value })}
-                    className="input-field"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400"
                   >
                     <option value="">Select...</option>
                     <option value="freshman">Freshman</option>
@@ -323,7 +278,7 @@ export function AnalyzePage() {
                     value={intakeData.major}
                     onChange={(e) => setIntakeData({ ...intakeData, major: e.target.value })}
                     placeholder="e.g., Computer Science"
-                    className="input-field"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400"
                   />
                 </div>
 
@@ -335,8 +290,8 @@ export function AnalyzePage() {
                     type="text"
                     value={intakeData.industries}
                     onChange={(e) => setIntakeData({ ...intakeData, industries: e.target.value })}
-                    placeholder="e.g., Tech, Finance, Healthcare"
-                    className="input-field"
+                    placeholder="e.g., Tech, Finance"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400"
                   />
                 </div>
 
@@ -365,9 +320,9 @@ export function AnalyzePage() {
                   <textarea
                     value={intakeData.biggestConcern}
                     onChange={(e) => setIntakeData({ ...intakeData, biggestConcern: e.target.value })}
-                    placeholder="What worries you most about your job search?"
+                    placeholder="What worries you most?"
                     rows={3}
-                    className="input-field resize-none"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 resize-none"
                   />
                 </div>
 
@@ -380,20 +335,20 @@ export function AnalyzePage() {
                     onChange={(e) => setIntakeData({ ...intakeData, perceivedGaps: e.target.value })}
                     placeholder="What do you feel you're missing?"
                     rows={3}
-                    className="input-field resize-none"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 resize-none"
                   />
                 </div>
 
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Strengths to Highlight
+                    Strengths
                   </label>
                   <textarea
                     value={intakeData.strengths}
                     onChange={(e) => setIntakeData({ ...intakeData, strengths: e.target.value })}
-                    placeholder="What are you most proud of? What do you want employers to know?"
+                    placeholder="What are you most proud of?"
                     rows={3}
-                    className="input-field resize-none"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 resize-none"
                   />
                 </div>
 
@@ -406,7 +361,7 @@ export function AnalyzePage() {
                       <button
                         key={tone}
                         onClick={() => setIntakeData({ ...intakeData, guidanceTone: tone })}
-                        className={`flex-1 py-3 px-4 rounded-lg border-2 transition-colors ${
+                        className={`flex-1 py-3 px-4 rounded-lg border-2 ${
                           intakeData.guidanceTone === tone
                             ? 'border-blue-600 bg-blue-50 text-blue-700'
                             : 'border-gray-200 hover:border-gray-300'
@@ -425,8 +380,8 @@ export function AnalyzePage() {
           {currentStep === 4 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">Review & Submit</h2>
-                <p className="text-gray-600">Ready to generate your career analysis?</p>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">Review & Submit</h2>
+                <p className="text-gray-600">Ready to generate your analysis?</p>
               </div>
 
               <div className="space-y-4">
@@ -454,12 +409,6 @@ export function AnalyzePage() {
                   <p className="text-gray-600 ml-8">{jobDescription.slice(0, 100)}...</p>
                 </div>
               </div>
-
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  <strong>What happens next?</strong> We\'ll analyze your resume against the job description, assess your fit, identify gaps, and create a personalized 30-day action plan. This takes about 30-60 seconds.
-                </p>
-              </div>
             </div>
           )}
 
@@ -468,9 +417,9 @@ export function AnalyzePage() {
             <button
               onClick={prevStep}
               disabled={currentStep === 1}
-              className={`btn-secondary ${currentStep === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`px-4 py-2 rounded-lg border border-gray-200 ${currentStep === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
             >
-              <ChevronLeft className="w-4 h-4 mr-2" />
+              <ChevronLeft className="w-4 h-4 mr-2 inline" />
               Back
             </button>
 
@@ -478,34 +427,30 @@ export function AnalyzePage() {
               <button
                 onClick={nextStep}
                 disabled={!canProceed()}
-                className={`btn-primary ${!canProceed() ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`px-4 py-2 rounded-lg bg-blue-600 text-white ${!canProceed() ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'}`}
               >
                 Next
-                <ChevronRight className="w-4 h-4 ml-2" />
+                <ChevronRight className="w-4 h-4 ml-2 inline" />
               </button>
             ) : (
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="btn-primary"
+                className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader2 className="w-4 h-4 mr-2 inline animate-spin" />
                     Analyzing...
                   </>
                 ) : (
-                  <>
-                    Generate Analysis
-                    <ChevronRight className="w-4 h-4 ml-2" />
-                  </>
+                  'Generate Analysis'
                 )}
               </button>
             )}
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );
 }
-
