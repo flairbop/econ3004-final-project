@@ -82,12 +82,9 @@ def extract_job_title(text: str, lines: List[str]) -> Optional[str]:
         r'^([A-Za-z\s]+(?:Engineer|Developer|Analyst|Manager|Director|Specialist|'
         r'Coordinator|Assistant|Intern|Lead|Architect|Consultant|Designer)'
         r'(?:\s*\([^)]*\))?)',
-        r'job title[:\s]+([^
-]+)',
-        r'position[:\s]+([^
-]+)',
-        r'we are (?:hiring|looking for)[:\s]+([^
-]+)',
+        r'job title[:\s]+([^\n]+)',
+        r'position[:\s]+([^\n]+)',
+        r'we are (?:hiring|looking for)[:\s]+([^\n]+)',
     ]
 
     # Try first few lines
@@ -121,8 +118,7 @@ def extract_company_name(text: str, lines: List[str]) -> Optional[str]:
     # Look for "at Company" patterns
     patterns = [
         r'at\s+([A-Z][A-Za-z0-9\s\-&]+)(?:\s|$)',
-        r'company[:\s]+([^
-]+)',
+        r'company[:\s]+([^\n]+)',
         r'^([A-Z][A-Za-z0-9\s\-&]+)\s+(?:is looking|seeks|hiring)',
         r'about\s+([A-Z][A-Za-z0-9\s\-&]+)',
     ]
@@ -141,8 +137,7 @@ def extract_company_name(text: str, lines: List[str]) -> Optional[str]:
 def extract_location(text: str) -> Optional[str]:
     """Extract location information."""
     patterns = [
-        r'location[:\s]+([^
-]+)',
+        r'location[:\s]+([^\n]+)',
         r'(?:remote|hybrid|onsite|on-site)[,\s]*([A-Za-z\s,]+)',
         r'([A-Za-z\s]+,\s*(?:[A-Z]{2}|[A-Za-z]+))',  # City, ST or City, Country
     ]
