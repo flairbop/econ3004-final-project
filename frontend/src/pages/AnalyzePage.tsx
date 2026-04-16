@@ -55,15 +55,30 @@ export function AnalyzePage() {
   };
 
   const handleSubmit = async () => {
-    if (!uploadResponse?.sessionId || !jobDescription.trim()) return;
+    console.log('handleSubmit called');
+    console.log('uploadResponse:', uploadResponse);
+    console.log('jobDescription:', jobDescription.substring(0, 50) + '...');
+
+    if (!uploadResponse?.sessionId) {
+      setError('Session ID is missing. Please go back and re-upload your resume.');
+      return;
+    }
+
+    if (!jobDescription.trim()) {
+      setError('Job description is required.');
+      return;
+    }
 
     setIsSubmitting(true);
     setError(null);
 
     try {
+      console.log('Starting analysis...');
       await api.startAnalysis(uploadResponse.sessionId, jobDescription, intakeData);
+      console.log('Analysis started, navigating...');
       navigate(`/report/${uploadResponse.sessionId}`);
     } catch (err) {
+      console.error('Analysis failed:', err);
       setError(err instanceof Error ? err.message : 'Failed to start analysis');
       setIsSubmitting(false);
     }
