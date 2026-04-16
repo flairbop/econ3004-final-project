@@ -30,17 +30,30 @@ class ApiService {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`${API_BASE_URL}/upload-resume`, {
-      method: 'POST',
-      body: formData,
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/upload-resume`, {
+        method: 'POST',
+        body: formData,
+      });
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Upload failed' }));
-      throw new Error(error.detail || 'Failed to upload resume');
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: 'Upload failed' }));
+        throw new Error(error.detail || 'Failed to upload resume');
+      }
+
+      return response.json();
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === 'Failed to fetch') {
+          throw new Error(
+            'Cannot connect to the server. Please make sure the backend is running on ' +
+            API_BASE_URL
+          );
+        }
+        throw error;
+      }
+      throw new Error('Network error: Unable to upload resume');
     }
-
-    return response.json();
   }
 
   // Start analysis

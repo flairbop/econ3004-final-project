@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
 
     # CORS - use Field to avoid parsing issues with env file
-    BACKEND_CORS_ORIGINS: str = Field(default="http://localhost:5173,http://localhost:3000", env="BACKEND_CORS_ORIGINS")
+    BACKEND_CORS_ORIGINS: str = Field(default="http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000", env="BACKEND_CORS_ORIGINS")
 
     @property
     def cors_origins(self) -> list[str]:
