@@ -1,22 +1,48 @@
 import type { IntakeFormData, UploadResponse, AnalysisStatusResponse, CareerReport, ChatResponse, ChatHistoryResponse } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const REQUEST_TIMEOUT_MS = 30000;
 
 class ApiService {
   private async fetchWithError(endpoint: string, options?: RequestInit): Promise<any> {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers: {
-        ...options?.headers,
-      },
-    });
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
-      throw new Error(error.detail || `HTTP ${response.status}`);
+    try {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        ...options,
+        signal: options?.signal ?? controller.signal,
+        headers: {
+          ...options?.headers,
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
+        throw new Error(error.detail || `HTTP ${response.status}`);
+      }
+
+      return response.json();
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        throw new Error('Request timed out. The server may be overloaded, please try again.');
+      }
+
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        throw new Error(
+          'Cannot connect to the server. Please make sure the backend is running on ' +
+          API_BASE_URL
+        );
+      }
+
+      if (error instanceof Error) {
+        throw error;
+      }
+
+      throw new Error('Network error: request failed');
+    } finally {
+      window.clearTimeout(timeoutId);
     }
-
-    return response.json();
   }
 
   // Health check

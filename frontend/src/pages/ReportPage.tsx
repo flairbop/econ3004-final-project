@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Target, AlertTriangle, CheckCircle, FileEdit,
-  MessageSquare, TrendingUp, Briefcase, AlertCircle,
+  MessageSquare, TrendingUp, AlertCircle,
   Loader2, ChevronLeft, MessageCircle, Download,
   Clock, Zap, BookOpen
 } from 'lucide-react';
@@ -20,33 +20,61 @@ export function ReportPage() {
   useEffect(() => {
     if (!sessionId) return;
 
+    let isCancelled = false;
+
+    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
     const loadReport = async () => {
-      try {
-        setIsLoading(true);
-        let status = await api.getAnalysisStatus(sessionId);
+      setIsLoading(true);
+      setError(null);
 
-        if (status.status === 'pending' || status.status === 'analyzing') {
-          await new Promise((resolve) => setTimeout(resolve, 3000));
-          status = await api.getAnalysisStatus(sessionId);
-        }
+      let networkRetryCount = 0;
 
-        if (status.status === 'completed') {
-          const reportData = await api.getReport(sessionId);
-          setReport(reportData);
-        } else if (status.status === 'failed') {
-          setError(status.errorMessage || 'Analysis failed');
-        } else {
-          setTimeout(() => loadReport(), 3000);
+      while (!isCancelled) {
+        try {
+          const status = await api.getAnalysisStatus(sessionId);
+          networkRetryCount = 0;
+
+          if (status.status === 'completed') {
+            const reportData = await api.getReport(sessionId);
+            if (!isCancelled) {
+              setReport(reportData);
+              setIsLoading(false);
+            }
+            return;
+          }
+
+          if (status.status === 'failed') {
+            if (!isCancelled) {
+              setError(status.errorMessage || 'Analysis failed');
+              setIsLoading(false);
+            }
+            return;
+          }
+
+          await sleep(3000);
+        } catch (err) {
+          networkRetryCount += 1;
+
+          if (networkRetryCount <= 8) {
+            await sleep(3000);
+            continue;
+          }
+
+          if (!isCancelled) {
+            setError(err instanceof Error ? err.message : 'Failed to load report');
+            setIsLoading(false);
+          }
           return;
         }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load report');
-      } finally {
-        setIsLoading(false);
       }
     };
 
     loadReport();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [sessionId]);
 
   const handleExport = () => {
