@@ -197,10 +197,11 @@ class OllamaProvider(BaseAIProvider):
                         "stream": False,
                         "options": {
                             "temperature": temperature,
-                            "num_predict": max_tokens
+                            "num_predict": max_tokens,
+                            "num_ctx": 8192  # Larger context for long prompts
                         }
                     },
-                    timeout=120.0
+                    timeout=300.0  # 5 minutes for complex reports
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -227,10 +228,11 @@ class OllamaProvider(BaseAIProvider):
                         "stream": True,
                         "options": {
                             "temperature": temperature,
-                            "num_predict": max_tokens
+                            "num_predict": max_tokens,
+                            "num_ctx": 8192  # Larger context for long prompts
                         }
                     },
-                    timeout=120.0
+                    timeout=300.0  # 5 minutes for complex reports
                 ) as response:
                     response.raise_for_status()
                     async for line in response.aiter_lines():

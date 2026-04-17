@@ -7,7 +7,7 @@ import {
   Clock, Zap, BookOpen
 } from 'lucide-react';
 import { api } from '../services/api';
-import type { CareerReport } from '../types';
+import type { CareerReport, AnalysisStatusResponse } from '../types';
 
 export function ReportPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -16,6 +16,7 @@ export function ReportPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('summary');
+  const [statusMessage, setStatusMessage] = useState<string>('');
 
   useEffect(() => {
     if (!sessionId) return;
@@ -35,6 +36,11 @@ export function ReportPage() {
           const status = await api.getAnalysisStatus(sessionId);
           networkRetryCount = 0;
 
+          // Update status message from backend
+          if (status.statusMessage) {
+            setStatusMessage(status.statusMessage);
+          }
+
           if (status.status === 'completed') {
             const reportData = await api.getReport(sessionId);
             if (!isCancelled) {
@@ -52,12 +58,12 @@ export function ReportPage() {
             return;
           }
 
-          await sleep(3000);
+          await sleep(2000);
         } catch (err) {
           networkRetryCount += 1;
 
           if (networkRetryCount <= 8) {
-            await sleep(3000);
+            await sleep(2000);
             continue;
           }
 
@@ -93,11 +99,16 @@ export function ReportPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
           <Loader2 className="w-10 h-10 text-blue-600 animate-spin mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Generating Your Report</h2>
-          <p className="text-gray-500">This typically takes 30-60 seconds...</p>
+          {statusMessage ? (
+            <p className="text-blue-600 text-sm font-medium mb-1">{statusMessage}</p>
+          ) : (
+            <p className="text-gray-500 mb-1">This typically takes 2-4 minutes...</p>
+          )}
+          <p className="text-gray-400 text-sm">Analyzing resume, job description, and generating personalized recommendations</p>
         </div>
       </div>
     );
