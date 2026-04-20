@@ -255,6 +255,76 @@ class OllamaProvider(BaseAIProvider):
             yield f"Error: {str(e)}"
 
 
+class GroqProvider(BaseAIProvider):
+    """
+    Groq API provider - FREE, ultra-fast (~500-1000 tokens/sec).
+    Sign up at: https://console.groq.com/
+    Free tier: 30 RPM, 14,400 RPD, 500K tokens/day
+    """
+
+    def __init__(self, model_name: str, api_key: Optional[str] = None):
+        super().__init__(model_name)
+        self.api_key = api_key or settings.GROQ_API_KEY
+        if not self.api_key:
+            raise ValueError("Groq API key not provided")
+        self.base_url = "https://api.groq.com/openai/v1"
+
+    async def generate(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.7) -> str:
+        """Generate using Groq API - extremely fast."""
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{self.base_url}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": self.model_name,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": max_tokens,
+                    "temperature": temperature
+                },
+                timeout=30.0  # Groq is fast - 30s is plenty
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data["choices"][0]["message"]["content"]
+
+    async def generate_stream(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.7) -> AsyncGenerator[str, None]:
+        """Stream generation from Groq API."""
+        async with httpx.AsyncClient() as client:
+            async with client.stream(
+                "POST",
+                f"{self.base_url}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": self.model_name,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": max_tokens,
+                    "temperature": temperature,
+                    "stream": True
+                },
+                timeout=30.0
+            ) as response:
+                response.raise_for_status()
+                async for line in response.aiter_lines():
+                    if line.startswith("data: "):
+                        data = line[6:]
+                        if data == "[DONE]":
+                            break
+                        try:
+                            chunk = json.loads(data)
+                            if "choices" in chunk and len(chunk["choices"]) > 0:
+                                delta = chunk["choices"][0].get("delta", {})
+                                if "content" in delta:
+                                    yield delta["content"]
+                        except json.JSONDecodeError:
+                            continue
+
+
 class HuggingFaceProvider(BaseAIProvider):
     """
     Hugging Face Inference API provider.
@@ -306,7 +376,9 @@ def get_report_provider() -> BaseAIProvider:
     """Get the configured provider for report generation."""
     provider = settings.REPORT_MODEL_PROVIDER
 
-    if provider == "openai":
+    if provider == "groq":
+        return GroqProvider(settings.REPORT_MODEL_NAME)
+    elif provider == "openai":
         return OpenAIProvider(settings.REPORT_MODEL_NAME)
     elif provider == "anthropic":
         return AnthropicProvider(settings.REPORT_MODEL_NAME)

@@ -36,11 +36,11 @@ class Settings(BaseSettings):
     ALLOWED_EXTENSIONS: set[str] = {".pdf", ".docx", ".txt"}
 
     # AI Model Configuration
-    # FREE-FIRST DEFAULTS: Ollama for local development
-    # For public deployment, frontend uses browser-based inference (WebLLM)
-    # Report generation model (can use Ollama, OpenAI, Anthropic, etc.)
-    REPORT_MODEL_PROVIDER: str = "ollama"  # Default: ollama (free, local)
-    REPORT_MODEL_NAME: str = "qwen2.5:7b"  # Lightweight, good quality
+    # FREE-FIRST DEFAULTS: Groq for fast cloud inference (free tier), Ollama for local
+    # Report generation model (can use Groq, Ollama, OpenAI, Anthropic, etc.)
+    REPORT_MODEL_PROVIDER: str = "groq"  # Default: groq (free, fast ~10s)
+    REPORT_MODEL_NAME: str = "llama-3.1-8b-instant"  # Fast, good quality
+    GROQ_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
     ANTHROPIC_API_KEY: Optional[str] = None
 

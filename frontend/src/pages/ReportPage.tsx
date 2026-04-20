@@ -106,7 +106,7 @@ export function ReportPage() {
           {statusMessage ? (
             <p className="text-blue-600 text-sm font-medium mb-1">{statusMessage}</p>
           ) : (
-            <p className="text-gray-500 mb-1">This typically takes 2-4 minutes...</p>
+            <p className="text-gray-500 mb-1">This typically takes 15-45 seconds...</p>
           )}
           <p className="text-gray-400 text-sm">Analyzing resume, job description, and generating personalized recommendations</p>
         </div>
