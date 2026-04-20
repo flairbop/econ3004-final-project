@@ -70,9 +70,24 @@ class ReportGenerator:
         }
         tone_instruction = tone_map.get(guidance_tone, tone_map["balanced"])
 
-        # Truncate texts if too long
-        resume_snippet = resume_text[:4000] + "..." if len(resume_text) > 4000 else resume_text
-        job_snippet = job_text[:3000] + "..." if len(job_text) > 3000 else job_text
+        # Truncate texts if too long (reduced limits to avoid Groq 413 errors)
+        resume_snippet = resume_text[:2000] + "..." if len(resume_text) > 2000 else resume_text
+        job_snippet = job_text[:1500] + "..." if len(job_text) > 1500 else job_text
+
+        # Truncate JSON structures to avoid payload limits
+        def truncate_dict(d: Dict, max_keys: int = 5) -> Dict:
+            """Truncate dictionary to avoid large payloads."""
+            if isinstance(d, dict):
+                truncated = {}
+                for i, (k, v) in enumerate(d.items()):
+                    if i >= max_keys:
+                        break
+                    truncated[k] = truncate_dict(v, max_keys) if isinstance(v, dict) else v
+                return truncated
+            return d
+
+        resume_struct_truncated = truncate_dict(resume_structure, max_keys=8)
+        job_struct_truncated = truncate_dict(job_structure, max_keys=5)
 
         prompt = f"""You are an expert career strategist and mentor specializing in helping college students and early-career professionals navigate job searches.
 
@@ -93,7 +108,7 @@ CANDIDATE RESUME:
 {resume_snippet}
 
 PARSED RESUME STRUCTURE:
-{json.dumps(resume_structure, indent=2)}
+{json.dumps(resume_struct_truncated, indent=2)}
 
 ---
 
@@ -101,7 +116,7 @@ TARGET JOB DESCRIPTION:
 {job_snippet}
 
 PARSED JOB STRUCTURE:
-{json.dumps(job_structure, indent=2)}
+{json.dumps(job_struct_truncated, indent=2)}
 
 ---
 
