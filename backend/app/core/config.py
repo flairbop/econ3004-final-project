@@ -51,7 +51,7 @@ class Settings(BaseSettings):
     HUGGINGFACE_API_KEY: Optional[str] = None
 
     # Report generation settings
-    MAX_REPORT_TOKENS: int = 4000
+    MAX_REPORT_TOKENS: int = 8000
     REPORT_TEMPERATURE: float = 0.3
 
     # Chat settings

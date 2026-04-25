@@ -65,177 +65,81 @@ class ReportGenerator:
 
         guidance_tone = intake.get("guidance_tone", "balanced")
         tone_map = {
-            "ambitious": "Be encouraging but realistic about growth potential. Push the user to aim high while being honest about gaps.",
-            "realistic": "Be pragmatic and grounded. Focus on what is achievable now and concrete steps forward.",
-            "balanced": "Balance ambition with realism. Acknowledge both strengths and gaps fairly."
+            "ambitious": "Be encouraging but push them to aim high.",
+            "realistic": "Be pragmatic. Focus on what is achievable now.",
+            "balanced": "Balance ambition with realism."
         }
         tone_instruction = tone_map.get(guidance_tone, tone_map["balanced"])
 
-        # Truncate texts if too long (reduced limits to avoid Groq 413 errors)
+        # Truncate texts to fit context window
         resume_snippet = resume_text[:2000] + "..." if len(resume_text) > 2000 else resume_text
         job_snippet = job_text[:1500] + "..." if len(job_text) > 1500 else job_text
 
-        # Truncate JSON structures to avoid payload limits
-        def truncate_dict(d: Dict, max_keys: int = 5) -> Dict:
-            """Truncate dictionary to avoid large payloads."""
-            if isinstance(d, dict):
-                truncated = {}
-                for i, (k, v) in enumerate(d.items()):
-                    if i >= max_keys:
-                        break
-                    truncated[k] = truncate_dict(v, max_keys) if isinstance(v, dict) else v
-                return truncated
-            return d
+        prompt = f"""You are an expert career strategist. Analyze this candidate against the target role.
 
-        resume_struct_truncated = truncate_dict(resume_structure, max_keys=8)
-        job_struct_truncated = truncate_dict(job_structure, max_keys=5)
+TONE: {tone_instruction}
+Be specific, reference their actual resume content. Be honest but supportive.
 
-        prompt = f"""You are an expert career strategist and mentor specializing in helping college students and early-career professionals navigate job searches.
-
-YOUR TASK: Analyze this candidate's profile against the target role and provide a comprehensive, structured career coaching report.
-
-IMPORTANT GUIDELINES:
-- {tone_instruction}
-- Be SPECIFIC, not generic. Reference actual content from their resume and the job description.
-- Distinguish between actual skill gaps vs. evidence gaps vs. weak positioning.
-- Do NOT invent achievements or metrics. Use placeholders like "[add metric if true]" if needed.
-- Be HONEST but SUPPORTIVE. Never shame the candidate.
-- Focus on ACTIONABLE recommendations, not vague advice.
-- IMPORTANT: Provide your response as a valid JSON object with the exact structure specified below.
-
----
-
-CANDIDATE RESUME:
+RESUME:
 {resume_snippet}
 
-PARSED RESUME STRUCTURE:
-{json.dumps(resume_struct_truncated, indent=2)}
-
----
-
-TARGET JOB DESCRIPTION:
+JOB DESCRIPTION:
 {job_snippet}
 
-PARSED JOB STRUCTURE:
-{json.dumps(job_struct_truncated, indent=2)}
-
----
-
-INTAKE QUESTIONNAIRE RESPONSES:
-- Target Role: {intake.get('target_role', 'Not specified')}
-- Alternative Roles: {intake.get('alternative_roles', 'None specified')}
-- Year/Status: {intake.get('year_in_school', 'Unknown')} / {intake.get('graduation_status', 'Unknown')}
-- Major/Background: {intake.get('major', 'Not specified')}
-- Industries of Interest: {intake.get('industries', 'Not specified')}
-- Confidence Level: {intake.get('confidence_level', 'Not specified')}
-- Biggest Concern: {intake.get('biggest_concern', 'Not specified')}
+CANDIDATE INFO:
+- Target: {intake.get('target_role', 'Not specified')}
+- Year: {intake.get('year_in_school', 'Unknown')} / {intake.get('graduation_status', 'Unknown')}
+- Major: {intake.get('major', 'Not specified')}
+- Concerns: {intake.get('biggest_concern', 'Not specified')}
 - Perceived Gaps: {intake.get('perceived_gaps', 'Not specified')}
-- Strengths They Want Highlighted: {intake.get('strengths', 'Not specified')}
-- Preferred Guidance: {intake.get('guidance_tone', 'balanced')}
 
----
-
-Generate a JSON response with this exact structure:
+Return ONLY a valid JSON object with this EXACT structure (no text before or after the JSON):
 
 {{
-  "executive_summary": "A 2-3 paragraph strategic assessment of their current position relative to the role, competitiveness, and key blockers.",
-
+  "executive_summary": "2-3 sentence strategic assessment",
   "fit_assessment": {{
-    "current_alignment": "How well their background matches the role requirements",
-    "competitiveness": "Assessment of whether they are under-positioned, decently matched, or underqualified",
-    "key_blockers": ["List 2-4 main obstacles"],
-    "realistic_timeline": "How long until they'd be competitive"
+    "current_alignment": "description of alignment",
+    "competitiveness": "under-positioned/decently matched/strong match",
+    "key_blockers": ["blocker1", "blocker2"],
+    "realistic_timeline": "timeline estimate"
   }},
-
   "overall_match_score": 65,
-
   "strengths": [
-    {{
-      "strength": "Specific strength",
-      "evidence": "What in their resume demonstrates this",
-      "positioning_tip": "How to highlight this better"
-    }}
+    {{"strength": "name", "evidence": "from resume", "positioning_tip": "advice"}}
   ],
-
   "weaknesses": [
-    {{
-      "weakness": "Specific gap or concern",
-      "type": "skill_gap|evidence_gap|positioning_gap|experience_gap",
-      "impact": "High/Medium/Low - how much this matters",
-      "mitigation": "How to address or compensate for this"
-    }}
+    {{"weakness": "name", "type": "skill_gap", "impact": "High", "mitigation": "how to fix"}}
   ],
-
   "skill_gaps": {{
-    "technical_gaps": [
-      {{
-        "skill": "Missing technical skill",
-        "importance": "Critical/Recommended/Nice-to-have",
-        "learnability": "How quickly this can be learned",
-        "resources": "Where to learn this"
-      }}
-    ],
-    "soft_skill_gaps": [{{"skill": "...", "context": "..."}}],
-    "experience_gaps": [{{"gap": "...", "alternative_evidence": "..."}}],
-    "evidence_gaps": [{{"missing_evidence": "...", "how_to_obtain": "..."}}]
+    "technical_gaps": [{{"skill": "name", "importance": "Critical", "learnability": "timeframe", "resources": "where"}}],
+    "soft_skill_gaps": [{{"skill": "name", "context": "why"}}],
+    "experience_gaps": [{{"gap": "name", "alternative_evidence": "suggestion"}}],
+    "evidence_gaps": [{{"missing_evidence": "what", "how_to_obtain": "how"}}]
   }},
-
   "resume_improvements": [
-    {{
-      "issue": "What's wrong",
-      "section": "Which resume section",
-      "severity": "High/Medium/Low",
-      "suggestion": "Specific fix to make"
-    }}
+    {{"issue": "problem", "section": "where", "severity": "High", "suggestion": "fix"}}
   ],
-
   "rewritten_bullets": [
-    {{
-      "original": "Original weak bullet",
-      "rewritten": "Stronger version - truthful but impactful",
-      "section": "experience|projects|education",
-      "improvements": ["List what was improved"]
-    }}
+    {{"original": "weak bullet", "rewritten": "improved version", "section": "experience", "improvements": ["what changed"]}}
   ],
-
   "interview_questions": {{
-    "behavioral": [
-      {{
-        "question": "Likely behavioral question",
-        "why_asked": "Why this might be asked based on their profile",
-        "prep_tip": "How to prepare"
-      }}
-    ],
-    "technical": [{{"question": "...", "why_asked": "...", "prep_tip": "..."}}],
-    "role_specific": [{{"question": "...", "why_asked": "...", "prep_tip": "..."}}]
+    "behavioral": [{{"question": "q", "why_asked": "reason", "prep_tip": "tip"}}],
+    "technical": [{{"question": "q", "why_asked": "reason", "prep_tip": "tip"}}],
+    "role_specific": [{{"question": "q", "why_asked": "reason", "prep_tip": "tip"}}]
   }},
-
   "alternative_roles": [
-    {{
-      "role": "Alternative job title",
-      "fit_level": "High/Medium/Low",
-      "reason": "Why this might be a better or more realistic fit",
-      "transition_difficulty": "Easy/Moderate/Difficult"
-    }}
+    {{"role": "title", "fit_level": "High", "reason": "why", "transition_difficulty": "Easy"}}
   ],
-
   "action_plan": [
-    {{
-      "week": 1,
-      "priority": "Must do/Should do/Could do",
-      "action": "Specific action item",
-      "details": "How to complete this",
-      "estimated_time": "Time required",
-      "outcome": "What success looks like"
-    }}
+    {{"week": 1, "priority": "Must do", "action": "what", "details": "how", "estimated_time": "time"}},
+    {{"week": 2, "priority": "Should do", "action": "what", "details": "how", "estimated_time": "time"}},
+    {{"week": 3, "priority": "Should do", "action": "what", "details": "how", "estimated_time": "time"}},
+    {{"week": 4, "priority": "Could do", "action": "what", "details": "how", "estimated_time": "time"}}
   ],
-
-  "confidence_notes": [
-    "Areas where the analysis has uncertainty and why"
-  ]
+  "confidence_notes": ["any uncertainty notes"]
 }}
 
-IMPORTANT: Return ONLY valid JSON. Do not include markdown formatting, explanations, or other text outside the JSON structure."""
+Provide 2-4 items per array section. Keep descriptions concise (1-2 sentences each). Return ONLY the JSON object."""
 
         return prompt
 
@@ -284,7 +188,16 @@ IMPORTANT: Return ONLY valid JSON. Do not include markdown formatting, explanati
                     if data is not None:
                         return self._validate_report(data)
 
-        logger.error(f"Failed to parse report JSON after all strategies. Response starts with: {response[:200]}")
+        # Strategy 6: Attempt to repair truncated JSON by closing open brackets/braces
+        if first_brace != -1:
+            repaired = self._repair_truncated_json(cleaned[first_brace:])
+            if repaired is not None:
+                data = self._try_parse_json(repaired)
+                if data is not None:
+                    logger.warning("Used JSON repair strategy for truncated response")
+                    return self._validate_report(data)
+
+        logger.error(f"Failed to parse report JSON after all strategies. Response length: {len(response)}, starts with: {response[:200]}")
         return self._create_fallback_report(response)
 
     def _try_parse_json(self, text: str) -> Dict[str, Any] | None:
@@ -323,6 +236,74 @@ IMPORTANT: Return ONLY valid JSON. Do not include markdown formatting, explanati
                 if depth == 0:
                     return self._try_parse_json(text[start:i + 1])
         return None
+
+    def _repair_truncated_json(self, text: str) -> str | None:
+        """Attempt to repair truncated JSON by closing open brackets/braces."""
+        if not text or text[0] != '{':
+            return None
+
+        repaired = text.rstrip()
+
+        # Strip trailing incomplete characters
+        while repaired and repaired[-1] not in '{}[],:"0123456789nulltruefalse':
+            repaired = repaired[:-1]
+
+        if len(repaired) < 2:
+            return None
+
+        # Remove trailing comma
+        if repaired.endswith(','):
+            repaired = repaired[:-1]
+
+        # Remove trailing colon + key (incomplete key-value pair)
+        if repaired.endswith(':'):
+            repaired = repaired[:-1].rstrip()
+            if repaired.endswith('"'):
+                key_start = repaired.rfind('"', 0, len(repaired) - 1)
+                if key_start > 0:
+                    repaired = repaired[:key_start].rstrip()
+                    if repaired.endswith(','):
+                        repaired = repaired[:-1]
+
+        # Track open brackets/braces
+        open_stack = []
+        in_string = False
+        escape_next = False
+
+        for char in repaired:
+            if escape_next:
+                escape_next = False
+                continue
+            if char == '\\' and in_string:
+                escape_next = True
+                continue
+            if char == '"' and not escape_next:
+                in_string = not in_string
+                continue
+            if in_string:
+                continue
+            if char == '{':
+                open_stack.append('}')
+            elif char == '[':
+                open_stack.append(']')
+            elif char in '}]':
+                if open_stack and open_stack[-1] == char:
+                    open_stack.pop()
+
+        # Close unclosed string
+        if in_string:
+            repaired += '"'
+
+        # Remove trailing comma after string closure
+        stripped = repaired.rstrip()
+        if stripped.endswith(','):
+            repaired = stripped[:-1]
+
+        # Close all open brackets/braces
+        while open_stack:
+            repaired += open_stack.pop()
+
+        return repaired if len(repaired) > 2 else None
 
     def _validate_report(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Validate and normalize report structure."""

@@ -195,13 +195,14 @@ class OllamaProvider(BaseAIProvider):
                         "model": self.model_name,
                         "prompt": prompt,
                         "stream": False,
+                        "format": "json",  # Force JSON output - no preamble text
                         "options": {
                             "temperature": temperature,
                             "num_predict": max_tokens,
-                            "num_ctx": 8192  # Larger context for long prompts
+                            "num_ctx": 16384  # Larger context for long prompts + responses
                         }
                     },
-                    timeout=300.0  # 5 minutes for complex reports
+                    timeout=600.0  # 10 minutes for complex reports on slower hardware
                 )
                 response.raise_for_status()
                 data = response.json()
