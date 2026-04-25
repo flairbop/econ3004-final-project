@@ -19,8 +19,8 @@ class BaseAIProvider(ABC):
         self.model_name = model_name
 
     @abstractmethod
-    async def generate(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.7) -> str:
-        """Generate a complete response."""
+    async def generate(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.7, json_mode: bool = False) -> str:
+        """Generate a complete response. Set json_mode=True for structured JSON output."""
         pass
 
     @abstractmethod
@@ -39,7 +39,7 @@ class OpenAIProvider(BaseAIProvider):
             raise ValueError("OpenAI API key not provided")
         self.base_url = "https://api.openai.com/v1"
 
-    async def generate(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.7) -> str:
+    async def generate(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.7, json_mode: bool = False) -> str:
         """Generate using OpenAI API."""
         async with httpx.AsyncClient() as client:
             response = await client.post(
@@ -105,7 +105,7 @@ class AnthropicProvider(BaseAIProvider):
             raise ValueError("Anthropic API key not provided")
         self.base_url = "https://api.anthropic.com/v1"
 
-    async def generate(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.7) -> str:
+    async def generate(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.7, json_mode: bool = False) -> str:
         """Generate using Anthropic API."""
         async with httpx.AsyncClient() as client:
             response = await client.post(
@@ -185,23 +185,27 @@ class OllamaProvider(BaseAIProvider):
             logger.warning(f"Could not check Ollama models: {e}")
             return False
 
-    async def generate(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.7) -> str:
+    async def generate(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.7, json_mode: bool = False) -> str:
         """Generate using local Ollama instance."""
         try:
             async with httpx.AsyncClient() as client:
+                payload = {
+                    "model": self.model_name,
+                    "prompt": prompt,
+                    "stream": False,
+                    "options": {
+                        "temperature": temperature,
+                        "num_predict": max_tokens,
+                        "num_ctx": 16384  # Larger context for long prompts + responses
+                    }
+                }
+                # Only force JSON format for report generation, not chatbot
+                if json_mode:
+                    payload["format"] = "json"
+
                 response = await client.post(
                     f"{self.base_url}/api/generate",
-                    json={
-                        "model": self.model_name,
-                        "prompt": prompt,
-                        "stream": False,
-                        "format": "json",  # Force JSON output - no preamble text
-                        "options": {
-                            "temperature": temperature,
-                            "num_predict": max_tokens,
-                            "num_ctx": 16384  # Larger context for long prompts + responses
-                        }
-                    },
+                    json=payload,
                     timeout=600.0  # 10 minutes for complex reports on slower hardware
                 )
                 response.raise_for_status()
@@ -270,7 +274,7 @@ class GroqProvider(BaseAIProvider):
             raise ValueError("Groq API key not provided")
         self.base_url = "https://api.groq.com/openai/v1"
 
-    async def generate(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.7) -> str:
+    async def generate(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.7, json_mode: bool = False) -> str:
         """Generate using Groq API - extremely fast."""
         async with httpx.AsyncClient() as client:
             response = await client.post(
@@ -337,7 +341,7 @@ class HuggingFaceProvider(BaseAIProvider):
         self.api_key = api_key or settings.HUGGINGFACE_API_KEY
         self.base_url = "https://api-inference.huggingface.co/models"
 
-    async def generate(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.7) -> str:
+    async def generate(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.7, json_mode: bool = False) -> str:
         """Generate using Hugging Face Inference API."""
         if not self.api_key:
             raise ValueError("Hugging Face API key not provided")

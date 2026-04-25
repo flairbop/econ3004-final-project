@@ -40,7 +40,8 @@ class ReportGenerator:
             response = await self.provider.generate(
                 prompt=prompt,
                 max_tokens=settings.MAX_REPORT_TOKENS,
-                temperature=settings.REPORT_TEMPERATURE
+                temperature=settings.REPORT_TEMPERATURE,
+                json_mode=True
             )
 
             # Parse the structured response
