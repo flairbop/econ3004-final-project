@@ -3,6 +3,7 @@ Career report generation service with comprehensive prompting.
 """
 import json
 import logging
+import re
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 
@@ -240,27 +241,88 @@ IMPORTANT: Return ONLY valid JSON. Do not include markdown formatting, explanati
 
     def _parse_report_response(self, response: str) -> Dict[str, Any]:
         """Parse the AI response into structured report data."""
-        # Try to extract JSON from the response
-        try:
-            # Remove any markdown code blocks if present
-            cleaned = response.strip()
-            if cleaned.startswith("```json"):
-                cleaned = cleaned[7:]
-            if cleaned.startswith("```"):
-                cleaned = cleaned[3:]
-            if cleaned.endswith("```"):
-                cleaned = cleaned[:-3]
+        # Try multiple strategies to extract JSON from the response
+        cleaned = response.strip()
 
-            cleaned = cleaned.strip()
-            data = json.loads(cleaned)
+        # Strategy 1: Remove markdown code fences
+        if "```" in cleaned:
+            # Extract content between code fences
+            match = re.search(r'```(?:json)?\s*\n?(.*?)\n?```', cleaned, re.DOTALL)
+            if match:
+                cleaned = match.group(1).strip()
 
-            # Validate required fields and set defaults
+        # Strategy 2: Try direct parse
+        data = self._try_parse_json(cleaned)
+        if data is not None:
             return self._validate_report(data)
 
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse report JSON: {e}")
-            # Return a minimal valid structure
-            return self._create_fallback_report(response)
+        # Strategy 3: Find the first { and last } to extract JSON object
+        first_brace = cleaned.find('{')
+        last_brace = cleaned.rfind('}')
+        if first_brace != -1 and last_brace > first_brace:
+            json_candidate = cleaned[first_brace:last_brace + 1]
+            data = self._try_parse_json(json_candidate)
+            if data is not None:
+                return self._validate_report(data)
+
+        # Strategy 4: Try brace-matching from the first {
+        if first_brace != -1:
+            data = self._extract_json_by_brace_matching(cleaned, first_brace)
+            if data is not None:
+                return self._validate_report(data)
+
+        # Strategy 5: Progressively trim from the end to find valid JSON
+        if first_brace != -1:
+            candidate = cleaned[first_brace:]
+            for trim in range(0, min(200, len(candidate)), 1):
+                end = len(candidate) - trim
+                if end <= first_brace:
+                    break
+                substr = candidate[:end]
+                if substr.rstrip().endswith('}'):
+                    data = self._try_parse_json(substr)
+                    if data is not None:
+                        return self._validate_report(data)
+
+        logger.error(f"Failed to parse report JSON after all strategies. Response starts with: {response[:200]}")
+        return self._create_fallback_report(response)
+
+    def _try_parse_json(self, text: str) -> Dict[str, Any] | None:
+        """Try to parse text as JSON, return None on failure."""
+        try:
+            data = json.loads(text)
+            if isinstance(data, dict):
+                return data
+        except (json.JSONDecodeError, ValueError):
+            pass
+        return None
+
+    def _extract_json_by_brace_matching(self, text: str, start: int) -> Dict[str, Any] | None:
+        """Extract JSON object by matching braces."""
+        depth = 0
+        in_string = False
+        escape_next = False
+        for i in range(start, len(text)):
+            char = text[i]
+            if escape_next:
+                escape_next = False
+                continue
+            if char == '\\':
+                if in_string:
+                    escape_next = True
+                continue
+            if char == '"' and not escape_next:
+                in_string = not in_string
+                continue
+            if in_string:
+                continue
+            if char == '{':
+                depth += 1
+            elif char == '}':
+                depth -= 1
+                if depth == 0:
+                    return self._try_parse_json(text[start:i + 1])
+        return None
 
     def _validate_report(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Validate and normalize report structure."""

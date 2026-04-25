@@ -227,11 +227,23 @@ export function ReportPage() {
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <span className="text-xs text-gray-500 uppercase">Current Alignment</span>
-                    <p className="text-gray-700">{report.fitAssessment?.currentAlignment}</p>
+                    <p className="text-gray-700">{(report.fitAssessment as any)?.currentAlignment || (report.fitAssessment as any)?.current_alignment || 'N/A'}</p>
                   </div>
                   <div>
                     <span className="text-xs text-gray-500 uppercase">Competitiveness</span>
-                    <p className="text-gray-700">{report.fitAssessment?.competitiveness}</p>
+                    <p className="text-gray-700">{report.fitAssessment?.competitiveness || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-500 uppercase">Timeline</span>
+                    <p className="text-gray-700">{(report.fitAssessment as any)?.realisticTimeline || (report.fitAssessment as any)?.realistic_timeline || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-500 uppercase">Key Blockers</span>
+                    <ul className="text-gray-700 list-disc list-inside">
+                      {((report.fitAssessment as any)?.keyBlockers || (report.fitAssessment as any)?.key_blockers || []).map((b: string, i: number) => (
+                        <li key={i} className="text-sm">{b}</li>
+                      ))}
+                    </ul>
                   </div>
                 </div>
               </div>
@@ -241,18 +253,22 @@ export function ReportPage() {
           {activeTab === 'strengths' && (
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Strengths</h2>
-              {report.strengths?.map((s, idx) => (
-                <div key={idx} className="border-l-4 border-green-500 pl-4 py-2 mb-4">
-                  <h4 className="font-medium text-gray-900">{s.strength}</h4>
-                  <p className="text-sm text-gray-600 mt-1">{s.evidence}</p>
-                  {s.positioningTip && (
-                    <div className="flex items-start gap-2 mt-2 bg-blue-50 rounded p-2">
-                      <Zap className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <p className="text-sm text-blue-700">{s.positioningTip}</p>
-                    </div>
-                  )}
-                </div>
-              ))}
+              {(!report.strengths || report.strengths.length === 0) ? (
+                <p className="text-gray-500 italic">No strengths data available.</p>
+              ) : (
+                report.strengths.map((s: any, idx: number) => (
+                  <div key={idx} className="border-l-4 border-green-500 pl-4 py-2 mb-4">
+                    <h4 className="font-medium text-gray-900">{s.strength}</h4>
+                    <p className="text-sm text-gray-600 mt-1">{s.evidence}</p>
+                    {(s.positioningTip || s.positioning_tip) && (
+                      <div className="flex items-start gap-2 mt-2 bg-blue-50 rounded p-2">
+                        <Zap className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                        <p className="text-sm text-blue-700">{s.positioningTip || s.positioning_tip}</p>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           )}
 
@@ -260,42 +276,80 @@ export function ReportPage() {
             <div className="space-y-6">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Weaknesses</h2>
-                {report.weaknesses?.map((w, idx) => (
-                  <div key={idx} className="border-l-4 border-red-400 pl-4 py-2 mb-4">
-                    <h4 className="font-medium text-gray-900">{w.weakness}</h4>
-                    <p className="text-sm text-gray-600 mt-1">{w.mitigation}</p>
-                  </div>
-                ))}
+                {(!report.weaknesses || report.weaknesses.length === 0) ? (
+                  <p className="text-gray-500 italic">No weaknesses identified.</p>
+                ) : (
+                  report.weaknesses.map((w: any, idx: number) => (
+                    <div key={idx} className="border-l-4 border-red-400 pl-4 py-2 mb-4">
+                      <h4 className="font-medium text-gray-900">{w.weakness}</h4>
+                      <p className="text-sm text-gray-600 mt-1">{w.mitigation}</p>
+                      {(w.impact) && (
+                        <span className={`inline-block text-xs px-2 py-0.5 rounded mt-1 ${
+                          w.impact === 'High' ? 'bg-red-100 text-red-700' :
+                          w.impact === 'Medium' ? 'bg-amber-100 text-amber-700' :
+                          'bg-blue-100 text-blue-700'
+                        }`}>{w.impact} impact</span>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
-              {report.skillGaps?.technicalGaps?.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-3">Technical Gaps</h3>
-                  <div className="space-y-2">
-                    {report.skillGaps.technicalGaps.map((g, idx) => (
-                      <div key={idx} className="bg-gray-50 p-3 rounded">
-                        <span className="font-medium text-gray-900">{g.skill}</span>
-                        {g.resources && <p className="text-sm text-gray-600 mt-1">{g.resources}</p>}
-                      </div>
-                    ))}
+              {(() => {
+                const techGaps = (report.skillGaps as any)?.technicalGaps || (report.skillGaps as any)?.technical_gaps || [];
+                return techGaps.length > 0 ? (
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-700 mb-3">Technical Gaps</h3>
+                    <div className="space-y-2">
+                      {techGaps.map((g: any, idx: number) => (
+                        <div key={idx} className="bg-gray-50 p-3 rounded">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-gray-900">{g.skill}</span>
+                            {g.importance && (
+                              <span className={`text-xs px-2 py-0.5 rounded ${
+                                g.importance === 'Critical' ? 'bg-red-100 text-red-700' :
+                                g.importance === 'Recommended' ? 'bg-amber-100 text-amber-700' :
+                                'bg-blue-100 text-blue-700'
+                              }`}>{g.importance}</span>
+                            )}
+                          </div>
+                          {g.resources && <p className="text-sm text-gray-600 mt-1">{g.resources}</p>}
+                          {g.learnability && <p className="text-xs text-gray-400 mt-1">Learnability: {g.learnability}</p>}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                ) : null;
+              })()}
             </div>
           )}
 
           {activeTab === 'resume' && (
             <div className="space-y-4">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Resume Improvements</h2>
-              {report.resumeImprovements?.map((imp, idx) => (
-                <div key={idx} className="border-l-4 border-amber-400 pl-4 py-2">
-                  <h4 className="font-medium text-gray-900">{imp.issue}</h4>
-                  <p className="text-sm text-gray-600 mt-1">{imp.suggestion}</p>
-                </div>
-              ))}
+              {(!report.resumeImprovements || report.resumeImprovements.length === 0) ? (
+                <p className="text-gray-500 italic">No resume improvements available.</p>
+              ) : (
+                report.resumeImprovements.map((imp: any, idx: number) => (
+                  <div key={idx} className="border-l-4 border-amber-400 pl-4 py-2">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium text-gray-900">{imp.issue}</h4>
+                      {(imp.severity) && (
+                        <span className={`text-xs px-2 py-0.5 rounded ${
+                          imp.severity === 'High' || imp.severity === 'high' ? 'bg-red-100 text-red-700' :
+                          imp.severity === 'Medium' || imp.severity === 'medium' ? 'bg-amber-100 text-amber-700' :
+                          'bg-blue-100 text-blue-700'
+                        }`}>{imp.severity}</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">{imp.suggestion}</p>
+                    {imp.section && <p className="text-xs text-gray-400 mt-1">Section: {imp.section}</p>}
+                  </div>
+                ))
+              )}
               {report.rewrittenBullets?.length > 0 && (
                 <div className="mt-6">
                   <h3 className="text-sm font-medium text-gray-700 mb-3">Bullet Rewrites</h3>
-                  {report.rewrittenBullets.map((b, idx) => (
+                  {report.rewrittenBullets.map((b: any, idx: number) => (
                     <div key={idx} className="space-y-2 mb-4">
                       <div className="bg-red-50 p-3 rounded">
                         <p className="text-xs text-red-600 font-medium">ORIGINAL</p>
@@ -314,52 +368,112 @@ export function ReportPage() {
 
           {activeTab === 'interview' && (
             <div className="space-y-6">
-              {report.interviewQuestions?.behavioral?.map((q, idx) => (
-                <div key={idx} className="border border-gray-200 rounded-lg p-4">
-                  <p className="font-medium text-gray-900 mb-2">{q.question}</p>
-                  <p className="text-sm text-gray-600">{q.whyAsked}</p>
-                  {q.prepTip && (
-                    <div className="flex items-start gap-2 mt-2 text-blue-700">
-                      <BookOpen className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                      <p className="text-sm">{q.prepTip}</p>
-                    </div>
-                  )}
-                </div>
-              ))}
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Interview Preparation</h2>
+              {(() => {
+                const iq = report.interviewQuestions || {} as any;
+                const behavioral = iq.behavioral || [];
+                const technical = iq.technical || [];
+                const roleSpecific = iq.roleSpecific || iq.role_specific || [];
+                const allEmpty = behavioral.length === 0 && technical.length === 0 && roleSpecific.length === 0;
+
+                if (allEmpty) {
+                  return <p className="text-gray-500 italic">No interview questions available.</p>;
+                }
+
+                return (
+                  <>
+                    {behavioral.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-700 mb-3">Behavioral Questions</h3>
+                        {behavioral.map((q: any, idx: number) => (
+                          <div key={idx} className="border border-gray-200 rounded-lg p-4 mb-3">
+                            <p className="font-medium text-gray-900 mb-2">{q.question}</p>
+                            <p className="text-sm text-gray-600">{q.whyAsked || q.why_asked}</p>
+                            {(q.prepTip || q.prep_tip) && (
+                              <div className="flex items-start gap-2 mt-2 text-blue-700">
+                                <BookOpen className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                <p className="text-sm">{q.prepTip || q.prep_tip}</p>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {technical.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-700 mb-3">Technical Questions</h3>
+                        {technical.map((q: any, idx: number) => (
+                          <div key={idx} className="border border-gray-200 rounded-lg p-4 mb-3">
+                            <p className="font-medium text-gray-900 mb-2">{q.question}</p>
+                            <p className="text-sm text-gray-600">{q.whyAsked || q.why_asked}</p>
+                            {(q.prepTip || q.prep_tip) && (
+                              <div className="flex items-start gap-2 mt-2 text-blue-700">
+                                <BookOpen className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                <p className="text-sm">{q.prepTip || q.prep_tip}</p>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {roleSpecific.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-700 mb-3">Role-Specific Questions</h3>
+                        {roleSpecific.map((q: any, idx: number) => (
+                          <div key={idx} className="border border-gray-200 rounded-lg p-4 mb-3">
+                            <p className="font-medium text-gray-900 mb-2">{q.question}</p>
+                            <p className="text-sm text-gray-600">{q.whyAsked || q.why_asked}</p>
+                            {(q.prepTip || q.prep_tip) && (
+                              <div className="flex items-start gap-2 mt-2 text-blue-700">
+                                <BookOpen className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                <p className="text-sm">{q.prepTip || q.prep_tip}</p>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           )}
 
           {activeTab === 'roadmap' && (
             <div className="space-y-4">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">30-Day Action Plan</h2>
-              {report.actionPlan?.map((step, idx) => (
-                <div key={idx} className="flex gap-4">
-                  <div className="flex flex-col items-center">
-                    <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center font-bold text-blue-600">
-                      W{step.week}
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-medium text-gray-900">{step.action}</h4>
-                      <span className={`text-xs px-2 py-1 rounded ${
-                        step.priority === 'Must do' ? 'bg-red-100 text-red-700' :
-                        step.priority === 'Should do' ? 'bg-amber-100 text-amber-700' :
-                        'bg-blue-100 text-blue-700'
-                      }`}>
-                        {step.priority}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600">{step.details}</p>
-                    {step.estimatedTime && (
-                      <div className="flex items-center gap-1 text-xs text-gray-400 mt-1">
-                        <Clock className="w-3 h-3" />
-                        <span>{step.estimatedTime}</span>
+              {(!report.actionPlan || report.actionPlan.length === 0) ? (
+                <p className="text-gray-500 italic">No action plan available.</p>
+              ) : (
+                report.actionPlan.map((step: any, idx: number) => (
+                  <div key={idx} className="flex gap-4">
+                    <div className="flex flex-col items-center">
+                      <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center font-bold text-blue-600">
+                        W{step.week}
                       </div>
-                    )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-medium text-gray-900">{step.action}</h4>
+                        <span className={`text-xs px-2 py-1 rounded ${
+                          step.priority === 'Must do' ? 'bg-red-100 text-red-700' :
+                          step.priority === 'Should do' ? 'bg-amber-100 text-amber-700' :
+                          'bg-blue-100 text-blue-700'
+                        }`}>
+                          {step.priority}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600">{step.details}</p>
+                      {(step.estimatedTime || step.estimated_time) && (
+                        <div className="flex items-center gap-1 text-xs text-gray-400 mt-1">
+                          <Clock className="w-3 h-3" />
+                          <span>{step.estimatedTime || step.estimated_time}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           )}
         </div>

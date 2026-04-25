@@ -122,39 +122,47 @@ class ApiService {
   async getReport(sessionId: string): Promise<CareerReport> {
     const response = await this.fetchWithError(`/report/${sessionId}`);
 
-    // Parse JSON fields that are stored as strings
+    // Helper to safely parse JSON strings that might come from the backend
+    const safeParse = (val: any, fallback: any = []) => {
+      if (val === null || val === undefined) return fallback;
+      if (typeof val === 'string') {
+        try { return JSON.parse(val); } catch { return fallback; }
+      }
+      return val;
+    };
+
+    // Helper to get a field from either camelCase or snake_case key
+    const getField = (camel: string, snake: string, fallback: any = []) => {
+      const val = response[camel] !== undefined ? response[camel] : response[snake];
+      return safeParse(val, fallback);
+    };
+
+    // Map backend response to frontend CareerReport type
+    // Backend sends camelCase via pydantic alias_generator=to_camel
     return {
-      ...response,
-      fitAssessment: typeof response.fit_assessment === 'string'
-        ? JSON.parse(response.fit_assessment)
-        : response.fit_assessment,
-      strengths: typeof response.strengths === 'string'
-        ? JSON.parse(response.strengths)
-        : response.strengths,
-      weaknesses: typeof response.weaknesses === 'string'
-        ? JSON.parse(response.weaknesses)
-        : response.weaknesses,
-      skillGaps: typeof response.skill_gaps === 'string'
-        ? JSON.parse(response.skill_gaps)
-        : response.skill_gaps,
-      resumeImprovements: typeof response.resume_improvements === 'string'
-        ? JSON.parse(response.resume_improvements)
-        : response.resume_improvements,
-      rewrittenBullets: typeof response.rewritten_bullets === 'string'
-        ? JSON.parse(response.rewritten_bullets)
-        : response.rewritten_bullets,
-      interviewQuestions: typeof response.interview_questions === 'string'
-        ? JSON.parse(response.interview_questions)
-        : response.interview_questions,
-      alternativeRoles: typeof response.alternative_roles === 'string'
-        ? JSON.parse(response.alternative_roles)
-        : response.alternative_roles,
-      actionPlan: typeof response.action_plan === 'string'
-        ? JSON.parse(response.action_plan)
-        : response.action_plan,
-      confidenceNotes: typeof response.confidence_notes === 'string'
-        ? JSON.parse(response.confidence_notes)
-        : response.confidence_notes,
+      sessionId: response.sessionId || response.session_id || sessionId,
+      executiveSummary: response.executiveSummary || response.executive_summary || '',
+      fitAssessment: getField('fitAssessment', 'fit_assessment', {
+        currentAlignment: 'Unknown',
+        competitiveness: 'Unknown',
+        keyBlockers: [],
+        realisticTimeline: 'Unknown'
+      }),
+      overallMatchScore: response.overallMatchScore ?? response.overall_match_score ?? null,
+      strengths: getField('strengths', 'strengths', []),
+      weaknesses: getField('weaknesses', 'weaknesses', []),
+      skillGaps: getField('skillGaps', 'skill_gaps', {
+        technicalGaps: [], softSkillGaps: [], experienceGaps: [], evidenceGaps: []
+      }),
+      resumeImprovements: getField('resumeImprovements', 'resume_improvements', []),
+      rewrittenBullets: getField('rewrittenBullets', 'rewritten_bullets', []),
+      interviewQuestions: getField('interviewQuestions', 'interview_questions', {
+        behavioral: [], technical: [], roleSpecific: []
+      }),
+      alternativeRoles: getField('alternativeRoles', 'alternative_roles', []),
+      actionPlan: getField('actionPlan', 'action_plan', []),
+      confidenceNotes: getField('confidenceNotes', 'confidence_notes', []),
+      createdAt: response.createdAt || response.created_at || new Date().toISOString(),
     };
   }
 

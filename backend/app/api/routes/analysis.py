@@ -212,20 +212,40 @@ async def get_report(
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
 
-    # Parse JSON fields
+    # Safely parse JSON fields
+    def safe_json_loads(value, default=None):
+        """Safely parse a JSON string, returning default on failure."""
+        if default is None:
+            default = []
+        if not value:
+            return default
+        try:
+            return json.loads(value)
+        except (json.JSONDecodeError, TypeError):
+            logger.warning(f"Failed to parse JSON field: {value[:100] if value else 'None'}...")
+            return default
+
+    # Parse fit_assessment from JSON string to dict
+    fit_assessment = safe_json_loads(report.fit_assessment, {
+        "current_alignment": "Unable to parse",
+        "competitiveness": "Unknown",
+        "key_blockers": [],
+        "realistic_timeline": "Unknown"
+    })
+
     return CareerReportResponse(
         session_id=report.session_id,
         executive_summary=report.executive_summary,
-        fit_assessment=report.fit_assessment,
+        fit_assessment=fit_assessment,
         overall_match_score=report.overall_match_score,
-        strengths=json.loads(report.strengths) if report.strengths else [],
-        weaknesses=json.loads(report.weaknesses) if report.weaknesses else [],
-        skill_gaps=json.loads(report.skill_gaps) if report.skill_gaps else {},
-        resume_improvements=json.loads(report.resume_improvements) if report.resume_improvements else [],
-        rewritten_bullets=json.loads(report.rewritten_bullets) if report.rewritten_bullets else [],
-        interview_questions=json.loads(report.interview_questions) if report.interview_questions else {},
-        alternative_roles=json.loads(report.alternative_roles) if report.alternative_roles else [],
-        action_plan=json.loads(report.action_plan) if report.action_plan else [],
-        confidence_notes=json.loads(report.confidence_notes) if report.confidence_notes else [],
+        strengths=safe_json_loads(report.strengths, []),
+        weaknesses=safe_json_loads(report.weaknesses, []),
+        skill_gaps=safe_json_loads(report.skill_gaps, {}),
+        resume_improvements=safe_json_loads(report.resume_improvements, []),
+        rewritten_bullets=safe_json_loads(report.rewritten_bullets, []),
+        interview_questions=safe_json_loads(report.interview_questions, {}),
+        alternative_roles=safe_json_loads(report.alternative_roles, []),
+        action_plan=safe_json_loads(report.action_plan, []),
+        confidence_notes=safe_json_loads(report.confidence_notes, []),
         created_at=report.created_at
     )

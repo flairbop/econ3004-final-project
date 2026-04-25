@@ -91,7 +91,8 @@ class RewrittenBullet(BaseModel):
     original: str
     rewritten: str
     section: str  # "experience", "projects", etc.
-    reasoning: str
+    reasoning: Optional[str] = None
+    improvements: Optional[List[str]] = None
 
 
 class ResumeImprovement(BaseModel):
@@ -168,17 +169,17 @@ class CareerReportResponse(BaseModel):
 
     session_id: str
     executive_summary: str
-    fit_assessment: str
-    overall_match_score: Optional[int] = None
-    strengths: List[Dict[str, Any]]
-    weaknesses: List[Dict[str, Any]]
-    skill_gaps: SkillGapReport
-    resume_improvements: List[ResumeImprovement]
-    rewritten_bullets: List[RewrittenBullet]
-    interview_questions: InterviewQuestions
-    alternative_roles: List[AlternativeRole]
-    action_plan: List[ActionPlanStep]
-    confidence_notes: List[str]
+    fit_assessment: Dict[str, Any]
+    overall_match_score: Optional[Any] = None
+    strengths: List[Dict[str, Any]] = Field(default_factory=list)
+    weaknesses: List[Dict[str, Any]] = Field(default_factory=list)
+    skill_gaps: Dict[str, Any] = Field(default_factory=dict)
+    resume_improvements: List[Dict[str, Any]] = Field(default_factory=list)
+    rewritten_bullets: List[Dict[str, Any]] = Field(default_factory=list)
+    interview_questions: Dict[str, Any] = Field(default_factory=dict)
+    alternative_roles: List[Dict[str, Any]] = Field(default_factory=list)
+    action_plan: List[Dict[str, Any]] = Field(default_factory=list)
+    confidence_notes: List[str] = Field(default_factory=list)
     created_at: datetime
 
 
